@@ -1677,15 +1677,21 @@ pub const RequestBatch = extern struct {
             }
 
             pub fn writable(self: Self) []T {
+                if (@sizeOf(T) == 0) {
+                    return &.{};
+                }
+
                 assert(self.wrote >= @sizeOf(RequestBatch));
                 assert(self.wrote <= self.body.len);
-                return switch (@sizeOf(T)) {
-                    0 => &.{},
-                    else => @alignCast(std.mem.bytesAsSlice(T, self.body[self.wrote..])),
-                };
+                return @alignCast(std.mem.bytesAsSlice(T, self.body[self.wrote..]));
             }
 
             pub fn advance(self: *Self, value_count: u16) void {
+                if (@sizeOf(T) == 0) {
+                    assert(value_count == 0);
+                    return;
+                }
+
                 maybe(value_count == 0);
                 assert(self.writable().len >= value_count);
 
@@ -1701,6 +1707,11 @@ pub const RequestBatch = extern struct {
             }
 
             pub fn write(self: *Self, values: []const T) void {
+                if (@sizeOf(T) == 0) {
+                    assert(values.len == 0);
+                    return;
+                }
+
                 const value_buffer = self.writable();
                 assert(value_buffer.len >= values.len);
 
@@ -1721,13 +1732,18 @@ pub const RequestBatch = extern struct {
             values: []const T,
 
             pub fn init(body: []const u8) Self {
+                if (@sizeOf(T) == 0) {
+                    assert(body.len == 0);
+                    return .{ .sizes = &[_]u16{0}, .values = &.{} };
+                }
+
                 assert(body.len <= constants.message_body_size_max);
                 assert(body.len >= @sizeOf(RequestBatch));
 
                 const batch: *const RequestBatch = @alignCast(@ptrCast(body.ptr));
                 assert(batch.count > 0);
                 assert(batch.count <= count_max);
-                
+
                 var value_count: u32 = 0;
                 for (batch.sizes[0..batch.count]) |size| {
                     maybe(size == 0);
@@ -1735,13 +1751,10 @@ pub const RequestBatch = extern struct {
                 }
 
                 assert(body.len == @sizeOf(RequestBatch) + (@sizeOf(T) * value_count));
-                return .{
-                    .sizes = batch.sizes[0..batch.count],
-                    .values = switch (@sizeOf(T)) {
-                        0 => &.{},
-                        else => @alignCast(std.mem.bytesAsSlice(T, body[@sizeOf(RequestBatch)..])),
-                    }
-                };
+                return .{ .sizes = batch.sizes[0..batch.count], .values = switch (@sizeOf(T)) {
+                    0 => &.{},
+                    else => @alignCast(std.mem.bytesAsSlice(T, body[@sizeOf(RequestBatch)..])),
+                } };
             }
 
             pub fn next(self: *Self) ?[]const T {
