@@ -470,12 +470,16 @@ pub fn ContextType(
                     ).init(reply);
 
                     var it: ?*Packet = packet;
+                    var event_count: usize = packet.batch_count_events;
                     while (it) |batched| {
                         it = batched.batch_next;
 
                         const results = reader.next() orelse {
                             @panic("client received invalid batched response");
                         };
+
+                        assert(event_count >= results.len);
+                        event_count -= results.len;
 
                         self.on_complete(batched, std.mem.sliceAsBytes(results));
                     }
