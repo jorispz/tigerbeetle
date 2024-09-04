@@ -2681,10 +2681,8 @@ pub fn StateMachineType(
                 client_release.value < release_max_exclusive.value;
         }
 
-        pub fn operation_result_max(
-            comptime operation: Operation,
-            events: []const Event(operation),
-        ) u32 {
+        pub fn operation_result_max(comptime operation: Operation, input: []const u8) u32 {
+            const events = std.mem.bytesAsSlice(Event(operation), input);
             switch (operation) {
                 .pulse => {
                     return 0; // pulse has no results;
