@@ -23,6 +23,7 @@ const release = @import("./scripts/release.zig");
 const devhub = @import("./scripts/devhub.zig");
 const changelog = @import("./scripts/changelog.zig");
 const upgrader = @import("./scripts/upgrader.zig");
+const antithesis = @import("./scripts/antithesis.zig");
 
 const CLIArgs = union(enum) {
     cfo: cfo.CLIArgs,
@@ -31,6 +32,7 @@ const CLIArgs = union(enum) {
     devhub: devhub.CLIArgs,
     changelog: void,
     upgrader: upgrader.CLIArgs,
+    antithesis: antithesis.CLIArgs,
 
     pub const help =
         \\Usage:
@@ -91,5 +93,6 @@ pub fn main() !void {
         .devhub => |args_devhub| try devhub.main(shell, gpa, args_devhub),
         .changelog => try changelog.main(shell, gpa),
         .upgrader => |args_upgrader| try upgrader.main(shell, gpa, args_upgrader),
+        .antithesis => |args_antithesis| try antithesis.main(shell, gpa, args_antithesis),
     }
 }
