@@ -3681,35 +3681,71 @@ pub fn ReplicaType(
 
                 if (self.commit_stage == .check_prepare) {
                     self.commit_stage = .prefetch;
+                    self.trace.start(.replica_commit, .{
+                        .stage = @tagName(.prefetch),
+                        .op = self.commit_prepare.?.header.op,
+                    });
                     if (self.commit_prefetch() == .pending) return;
                 }
 
                 if (self.commit_stage == .prefetch) {
+                    self.trace.stop(.replica_commit, .{ .stage = @tagName(.prefetch) });
                     self.commit_stage = .reply_setup;
+                    self.trace.start(.replica_commit, .{
+                        .stage = @tagName(.reply_setup),
+                        .op = self.commit_prepare.?.header.op,
+                    });
                     if (self.commit_reply_setup() == .pending) return;
                 }
 
                 if (self.commit_stage == .reply_setup) {
+                    self.trace.stop(.replica_commit, .{ .stage = @tagName(.reply_setup) });
                     self.commit_stage = .execute;
+                    self.trace.start(.replica_commit, .{
+                        .stage = @tagName(.execute),
+                        .op = self.commit_prepare.?.header.op,
+                    });
+
                     self.commit_execute();
                 }
 
                 if (self.commit_stage == .execute) {
+                    self.trace.stop(.replica_commit, .{ .stage = @tagName(.execute) });
                     self.commit_stage = .compact;
+                    self.trace.start(.replica_commit, .{
+                        .stage = @tagName(.compact),
+                        .op = self.commit_prepare.?.header.op,
+                    });
+
                     if (self.commit_compact() == .pending) return;
                 }
 
                 if (self.commit_stage == .compact) {
+                    self.trace.stop(.replica_commit, .{ .stage = @tagName(.compact) });
                     self.commit_stage = .{ .checkpoint_data = .{} };
+                    self.trace.start(.replica_commit, .{
+                        .stage = @tagName(.checkpoint_data),
+                        .op = self.commit_prepare.?.header.op,
+                    });
+
                     if (self.commit_checkpoint_data() == .pending) return;
                 }
 
                 if (self.commit_stage == .checkpoint_data) {
+                    self.trace.stop(.replica_commit, .{ .stage = @tagName(.checkpoint_data) });
                     self.commit_stage = .checkpoint_superblock;
+                    self.trace.start(.replica_commit, .{
+                        .stage = @tagName(.checkpoint_superblock),
+                        .op = self.commit_prepare.?.header.op,
+                    });
+
                     if (self.commit_checkpoint_superblock() == .pending) return;
                 }
 
                 if (self.commit_stage == .checkpoint_superblock) {
+                    self.trace.stop(.replica_commit, .{
+                        .stage = @tagName(.checkpoint_superblock),
+                    });
                     self.commit_stage = .idle;
                     self.commit_finish();
 
