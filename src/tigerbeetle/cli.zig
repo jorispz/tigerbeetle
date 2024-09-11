@@ -754,13 +754,13 @@ fn parse_args_start(start: CLIArgs.Start) Command.Start {
             "--cache-transfers",
         ),
         .cache_transfers_pending = parse_cache_size_to_count(
-            StateMachine.TransferPending,
+            vsr.state_machine.TransferPendingGrooveValue,
             TransfersPendingValuesCache,
             start.cache_transfers_pending orelse defaults.cache_transfers_pending,
             "--cache-transfers-pending",
         ),
         .cache_account_balances = parse_cache_size_to_count(
-            StateMachine.AccountBalancesGrooveValue,
+            vsr.state_machine.AccountBalancesGrooveValue,
             AccountBalancesValuesCache,
             start.cache_account_balances orelse defaults.cache_account_balances,
             "--cache-account-balances",

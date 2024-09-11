@@ -39,6 +39,38 @@ const CreateTransferResult = tb.CreateTransferResult;
 const AccountFilter = tb.AccountFilter;
 const QueryFilter = tb.QueryFilter;
 
+pub const TransferPendingGrooveValue = extern struct {
+    timestamp: u64,
+    status: TransferPendingStatus,
+    padding: [7]u8 = [_]u8{0} ** 7,
+
+    comptime {
+        assert(@sizeOf(TransferPendingGrooveValue) == 16);
+        assert(stdx.no_padding(TransferPendingGrooveValue));
+    }
+};
+
+pub const AccountBalancesGrooveValue = extern struct {
+    dr_account_id: u128,
+    dr_debits_pending: u128,
+    dr_debits_posted: u128,
+    dr_credits_pending: u128,
+    dr_credits_posted: u128,
+    cr_account_id: u128,
+    cr_debits_pending: u128,
+    cr_debits_posted: u128,
+    cr_credits_pending: u128,
+    cr_credits_posted: u128,
+    timestamp: u64 = 0,
+    reserved: [88]u8 = [_]u8{0} ** 88,
+
+    comptime {
+        assert(stdx.no_padding(AccountBalancesGrooveValue));
+        assert(@sizeOf(AccountBalancesGrooveValue) == 256);
+        assert(@alignOf(AccountBalancesGrooveValue) == 16);
+    }
+};
+
 pub fn StateMachineType(
     comptime Storage: type,
     comptime config: global_constants.StateMachineConfig,
@@ -265,7 +297,7 @@ pub fn StateMachineType(
 
         const TransfersPendingGroove = GrooveType(
             Storage,
-            TransferPending,
+            TransferPendingGrooveValue,
             .{
                 .ids = constants.tree_ids.transfers_pending,
                 .batch_value_count_max = batch_value_count_max.transfers_pending,
@@ -274,18 +306,6 @@ pub fn StateMachineType(
                 .derived = .{},
             },
         );
-
-        pub const TransferPending = extern struct {
-            timestamp: u64,
-            status: TransferPendingStatus,
-            padding: [7]u8 = [_]u8{0} ** 7,
-
-            comptime {
-                // Assert that there is no implicit padding.
-                assert(@sizeOf(TransferPending) == 16);
-                assert(stdx.no_padding(TransferPending));
-            }
-        };
 
         const AccountBalancesGroove = GrooveType(
             Storage,
@@ -310,27 +330,6 @@ pub fn StateMachineType(
                 .derived = .{},
             },
         );
-
-        pub const AccountBalancesGrooveValue = extern struct {
-            dr_account_id: u128,
-            dr_debits_pending: u128,
-            dr_debits_posted: u128,
-            dr_credits_pending: u128,
-            dr_credits_posted: u128,
-            cr_account_id: u128,
-            cr_debits_pending: u128,
-            cr_debits_posted: u128,
-            cr_credits_pending: u128,
-            cr_credits_posted: u128,
-            timestamp: u64 = 0,
-            reserved: [88]u8 = [_]u8{0} ** 88,
-
-            comptime {
-                assert(stdx.no_padding(AccountBalancesGrooveValue));
-                assert(@sizeOf(AccountBalancesGrooveValue) == 256);
-                assert(@alignOf(AccountBalancesGrooveValue) == 16);
-            }
-        };
 
         pub const Workload = WorkloadType(StateMachine);
 
@@ -2532,13 +2531,13 @@ pub fn StateMachineType(
         fn get_transfer_pending(
             self: *const StateMachine,
             pending_timestamp: u64,
-        ) ?*const TransferPending {
+        ) ?*const TransferPendingGrooveValue {
             return self.forest.grooves.transfers_pending.get(pending_timestamp);
         }
 
         fn transfer_update_pending_status(
             self: *StateMachine,
-            transfer_pending: *const TransferPending,
+            transfer_pending: *const TransferPendingGrooveValue,
             status: TransferPendingStatus,
         ) void {
             assert(transfer_pending.timestamp != 0);
