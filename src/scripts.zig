@@ -93,6 +93,6 @@ pub fn main() !void {
         .devhub => |args_devhub| try devhub.main(shell, gpa, args_devhub),
         .changelog => try changelog.main(shell, gpa),
         .upgrader => |args_upgrader| try upgrader.main(shell, gpa, args_upgrader),
-        .antithesis => |args_antithesis| try antithesis.main(shell, gpa, args_antithesis),
+        .antithesis => |args_antithesis| try antithesis.main(shell, args_antithesis),
     }
 }
