@@ -39,10 +39,12 @@ pub const ScanBuffer = struct {
         }
     };
 
+    index: u8,
     levels: [constants.lsm_levels]LevelBuffer,
 
-    pub fn init(self: *ScanBuffer, allocator: Allocator) !void {
+    pub fn init(self: *ScanBuffer, allocator: Allocator, index: u8) !void {
         self.* = .{
+            .index = index,
             .levels = undefined,
         };
         for (&self.levels, 0..) |*level, i| {
@@ -73,9 +75,9 @@ pub const ScanBufferPool = struct {
             .scan_buffer_used = 0,
         };
 
-        for (&self.scan_buffers, 0..) |*scan_buffer, i| {
-            errdefer for (self.scan_buffers[0..i]) |*buffer| buffer.deinit(allocator);
-            try scan_buffer.init(allocator);
+        for (&self.scan_buffers, 0..) |*scan_buffer, index| {
+            errdefer for (self.scan_buffers[0..index]) |*buffer| buffer.deinit(allocator);
+            try scan_buffer.init(allocator, @intCast(index));
         }
         errdefer for (&self.scan_buffers) |*buffer| buffer.deinit(allocator);
     }
